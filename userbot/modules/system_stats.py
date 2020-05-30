@@ -12,7 +12,7 @@ from shutil import which
 from os import remove
 from telethon import version
 
-from userbot import CMD_HELP, ALIVE_NAME
+from userbot import CMD_HELP, ALIVE_NAME, UPSTREAM_REPO_BRANCH
 from userbot.events import register
 
 # ================= CONSTANT =================
@@ -128,17 +128,15 @@ async def pipcheck(pip):
             await pip.edit("`Use .help pip to see an example`")
 
 
-@register(outgoing=True, pattern="^.alive$")
+@register(outgoing=True, pattern=r"^\.(?:alive|on)\s?(.)?")
 async def amireallyalive(alive):
     """ For .on command, check if the bot is running.  """
-    await alive.edit("`"
-                     "I'm alive, at your services....\n"
-                     f"------------------------------------\n"
+    await alive.edit ("`ProjectBish` is running with `{UPSTREAM_REPO_BRANCH}`\n"
+                     f"=====================================\n"
                      f"•  User             : {DEFAULTUSER}\n"
-                     f"•  Python           : {python_version()}\n"
-                     f"•  Telethon version : {version.__version__}\n"
-                     f"------------------------------------\n"
-                     "`")
+                     f"•  Python           : `{python_version()}`\n"
+                     f"•  Telethon version : `{version.__version__}`\n"
+                     f"=====================================\n")
 
 
 @register(outgoing=True, pattern="^.aliveu")
