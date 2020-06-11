@@ -160,6 +160,8 @@ QUOTES_API_TOKEN = os.environ.get("QUOTES_API_TOKEN", None)
 # Uptobox
 USR_TOKEN = os.environ.get("USR_TOKEN_UPTOBOX", None)
 
+# Deezloader
+DEEZER_ARL_TOKEN = os.environ.get("DEEZER_ARL_TOKEN", None)
 
 # Setting Up CloudMail.ru and MEGA.nz extractor binaries,
 # and giving them correct perms to work properly.
