@@ -7,9 +7,13 @@ import shutil
 import time
 import datetime
 import asyncio
+import glob
+import subprocess
+import requests
 
 from hachoir.metadata import extractMetadata
 from hachoir.parser import createParser
+from bs4 import BeautifulSoup
 from telethon import events
 from telethon.errors.rpcerrorlist import YouBlockedUserError
 from telethon.tl.functions.account import UpdateNotifySettingsRequest
@@ -18,6 +22,82 @@ from userbot import bot, CMD_HELP, DEEZER_ARL_TOKEN, TEMP_DOWNLOAD_DIRECTORY
 from userbot.events import register
 
 @register(outgoing=True, pattern="^.netease(?: |$)(.*)")
+
+# For song module
+def get_readable_time(seconds: int) -> str:
+    count = 0
+    up_time = ""
+    time_list = []
+    time_suffix_list = ["s", "m", "h", "days"]
+    while count < 4:
+        count += 1
+        if count < 3:
+            remainder, result = divmod(seconds, 60)
+        else:
+            remainder, result = divmod(seconds, 24)
+        if seconds == 0 and remainder == 0:
+            break
+        time_list.append(int(result))
+        seconds = int(remainder)
+    for x in range(len(time_list)):
+        time_list[x] = str(time_list[x]) + time_suffix_list[x]
+    if len(time_list) == 4:
+        up_time += time_list.pop() + ", "
+    time_list.reverse()
+    up_time += ":".join(time_list)
+
+    return up_time
+
+def getmusic(get, DEFAULT_AUDIO_QUALITY):
+  search = get
+
+  headers = {'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'}
+
+  html = requests.get('https://www.youtube.com/results?search_query='+search, headers=headers).text
+  soup = BeautifulSoup(html, 'html.parser')
+  for link in soup.find_all('a'):
+    if '/watch?v=' in link.get('href'):
+        # May change when Youtube Website may get updated in the future.
+        video_link = link.get('href')
+        break
+
+  video_link =  'http://www.youtube.com/'+video_link
+  command = ('youtube-dl --extract-audio --audio-format mp3 --audio-quality ' +DEFAULT_AUDIO_QUALITY + ' ' + video_link)
+  os.system(command)
+
+
+@register(outgoing=True, pattern=r"^\.song (.*)")
+async def _(event):
+    reply_to_id = event.message.id
+    if event.reply_to_msg_id:
+        reply_to_id = event.reply_to_msg_id
+    reply = await event.get_reply_message()
+    if event.pattern_match.group(1):
+        query = event.pattern_match.group(1)
+        await event.edit("`Wait..! I am finding your song..`")
+    elif reply.message:
+        query = reply.message
+        await event.edit("`Wait..! I am finding your song..`")
+    else:
+    	await event.edit("`What I am Supposed to find`")
+    	return
+
+    getmusic(str(query),"320k")
+    l = glob.glob("*.mp3")
+    loa = l[0]
+    await event.edit("`Yeah.. Uploading your song..`")
+    await event.client.send_file(
+                event.chat_id,
+                loa,
+                force_document=True,
+                allow_cache=False,
+                caption=query,
+                reply_to=reply_to_id
+            )
+    await event.delete()
+    os.system("rm -rf *.mp3")
+    subprocess.check_output("rm -rf *.mp3",shell=True)
+
 
 async def _(event):
     if event.fwd_from:
@@ -241,13 +321,15 @@ async def upload_track(track_location, message):
 
 CMD_HELP.update({
     "getmusic":
-    ">`.netease <Artist - Song Title>`"
+    ">`.song` **Artist - Song Title**"
+    "\nUsage: Finding and uploading song.\n"
+    ">\n\n`.netease` **<Artist - Song Title>**"
     "\nUsage: Download music with @WooMaiBot"
-    "\n\n>`.sdd <Spotify/Deezer Link>`"
-    "\nUsage: Download music from Spotify or Deezer"
-    "\n\n>`.smd <Artist - Song Title>`"
-    "\nUsage: Download music from Spotify"
-    "\n\n>`.deezload` <spotify/deezer link> <Format>"
+    "\n\n>`.sdd` **<Spotify/Deezer Link>**"
+    "\nUsage: Download Spotify/Deezer Music with @MusicHuntersBot"
+    "\n\n>`.smd` **<Artist - Song Title>**"
+    "\nUsage: Download Spotify Music with @SpotifyMusicDownloaderBot"
+    "\n\n>`.deezload` **<spotify/deezer link> <Format>**"
     "\nUsage: Download music from deezer."
     "\n__Format=__ `FLAC`, `MP3_320`, `MP3_256`, `MP3_128`."
 })
