@@ -5,62 +5,47 @@ import deezloader
 import os
 import shutil
 import time
-import asyncio
-import glob
-import subprocess
-import requests
+from asyncio.exceptions import TimeoutError
 
+import deezloader
 from hachoir.metadata import extractMetadata
 from hachoir.parser import createParser
-from bs4 import BeautifulSoup
+from pylast import User
+from selenium import webdriver
 from telethon import events
 from telethon.errors.rpcerrorlist import YouBlockedUserError
-from telethon.tl.types import DocumentAttributeAudio
-from userbot import bot, CMD_HELP, DEEZER_ARL_TOKEN, TEMP_DOWNLOAD_DIRECTORY
+from telethon.tl.types import DocumentAttributeAudio, DocumentAttributeVideo
+
+from userbot import (
+    CMD_HELP,
+    DEEZER_ARL_TOKEN,
+    GOOGLE_CHROME_BIN,
+    LASTFM_USERNAME,
+    TEMP_DOWNLOAD_DIRECTORY,
+    bot,
+    lastfm,
+)
 from userbot.events import register
 
 
-# For song module
-def get_readable_time(seconds: int) -> str:
-    count = 0
-    up_time = ""
-    time_list = []
-    time_suffix_list = ["s", "m", "h", "days"]
-    while count < 4:
-        count += 1
-        if count < 3:
-            remainder, result = divmod(seconds, 60)
-        else:
-            remainder, result = divmod(seconds, 24)
-        if seconds == 0 and remainder == 0:
-            break
-        time_list.append(int(result))
-        seconds = int(remainder)
-    for x in range(len(time_list)):
-        time_list[x] = str(time_list[x]) + time_suffix_list[x]
-    if len(time_list) == 4:
-        up_time += time_list.pop() + ", "
-    time_list.reverse()
-    up_time += ":".join(time_list)
-
-    return up_time
-
-def getmusic(get, DEFAULT_AUDIO_QUALITY):
-  search = get
-
-  headers = {'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'}
-
-  html = requests.get('https://www.youtube.com/results?search_query='+search, headers=headers).text
-  soup = BeautifulSoup(html, 'html.parser')
-  for link in soup.find_all('a'):
-    if '/watch?v=' in link.get('href'):
-        # May change when Youtube Website may get updated in the future.
-        video_link = link.get('href')
+async def getmusicvideo(cat):
+    video_link = ""
+    search = cat
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument("--ignore-certificate-errors")
+    chrome_options.add_argument("--test-type")
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.binary_location = GOOGLE_CHROME_BIN
+    driver = webdriver.Chrome(chrome_options=chrome_options)
+    driver.get("https://www.youtube.com/results?search_query=" + search)
+    user_data = driver.find_elements_by_xpath('//*[@id="video-title"]')
+    for i in user_data:
+        video_link = i.get_attribute("href")
         break
-
-  video_link =  'http://www.youtube.com/'+video_link
-  command = ('youtube-dl --extract-audio --audio-format mp3 --audio-quality ' +DEFAULT_AUDIO_QUALITY + ' ' + video_link)
-  os.system(command)
+    command = 'youtube-dl -f "[filesize<50M]" --merge-output-format mp4 ' + video_link
+    os.system(command)
 
 
 @register(outgoing=True, pattern=r"^\.song (.*)")
@@ -96,7 +81,77 @@ async def _(event):
     subprocess.check_output("rm -rf *.mp3",shell=True)
 
 
-@register(outgoing=True, pattern="^.netease(?: |$)(.*)")
+@register(outgoing=True, pattern=r"^\.vsong(?: |$)(.*)")
+async def _(event):
+    reply_to_id = event.message.id
+    if event.reply_to_msg_id:
+        reply_to_id = event.reply_to_msg_id
+    reply = await event.get_reply_message()
+    if event.pattern_match.group(1):
+        query = event.pattern_match.group(1)
+        await event.edit("`Wait..! I am finding your videosong..`")
+    elif reply:
+        query = str(reply.message)
+        await event.edit("`Wait..! I am finding your videosong..`")
+    else:
+        await event.edit("`What I am Supposed to find?`")
+        return
+    await getmusicvideo(query)
+    l = glob.glob(("*.mp4")) + glob.glob(("*.mkv")) + glob.glob(("*.webm"))
+    if l:
+        await event.edit("`Yeah..! i found something..`")
+    else:
+        await event.edit(f"`Sorry..! i can't find anything with` **{query}**")
+        return
+    try:
+        loa = l[0]
+        metadata = extractMetadata(createParser(loa))
+        duration = 0
+        width = 0
+        height = 0
+        if metadata.has("duration"):
+            duration = metadata.get("duration").seconds
+        if metadata.has("width"):
+            width = metadata.get("width")
+        if metadata.has("height"):
+            height = metadata.get("height")
+        os.system("cp *mp4 thumb.mp4")
+        os.system("ffmpeg -i thumb.mp4 -vframes 1 -an -s 480x360 -ss 5 thumb.jpg")
+        thumb_image = "thumb.jpg"
+        c_time = time.time()
+        await event.client.send_file(
+            event.chat_id,
+            loa,
+            force_document=False,
+            thumb=thumb_image,
+            allow_cache=False,
+            caption=query,
+            supports_streaming=True,
+            reply_to=reply_to_id,
+            attributes=[
+                DocumentAttributeVideo(
+                    duration=duration,
+                    w=width,
+                    h=height,
+                    round_message=False,
+                    supports_streaming=True,
+                )
+            ],
+            progress_callback=lambda d, t: asyncio.get_event_loop().create_task(
+                progress(d, t, event, c_time, "[UPLOAD]", loa)
+            ),
+        )
+        await event.edit(f"**{query}** `Uploaded Successfully..!`")
+        os.remove(thumb_image)
+        os.system("rm -rf *.mkv")
+        os.system("rm -rf *.mp4")
+        os.system("rm -rf *.webm")
+    except BaseException:
+        os.remove(thumb_image)
+        os.system("rm -rf *.mkv")
+        os.system("rm -rf *.mp4")
+        os.system("rm -rf *.webm")
+        return
 
 async def _(event):
     if event.fwd_from:
