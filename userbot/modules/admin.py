@@ -431,8 +431,7 @@ async def rm_deletedacc(show):
         if del_u > 0:
             del_status = (
                 f"`Found` **{del_u}** `ghost/deleted/zombie account(s) in this group,"
-                "\nclean them by using .zombies clean`"
-            )
+                "\nclean them by using .zombies clean`")
         return await show.edit(del_status)
 
     # Here laying the sanity check
@@ -468,7 +467,7 @@ async def rm_deletedacc(show):
     if del_a > 0:
         del_status = (f"Cleaned **{del_u}** deleted account(s) "
                       f"\n**{del_a}** deleted admin accounts are not removed"
-        )
+                      )
     await show.edit(del_status)
     await sleep(2)
     await show.delete()
@@ -666,7 +665,7 @@ async def get_user_from_id(user, event):
 
     return user_obj
 
-  
+
 @register(outgoing=True, pattern="^.usersdel ?(.*)")
 async def get_usersdel(show):
     """ For .usersdel command, list all of the deleted users in a chat. """
@@ -683,7 +682,7 @@ async def get_usersdel(show):
         else:
             searchq = show.pattern_match.group(1)
             async for user in show.client.iter_participants(
-                   show.chat_id, search=f'{searchq}'):
+                    show.chat_id, search=f'{searchq}'):
                 if not user.deleted:
                     mentions += f"\n[{user.first_name}](tg://user?id={user.id}) `{user.id}`"
          #       else:

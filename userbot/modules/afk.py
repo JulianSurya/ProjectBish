@@ -9,13 +9,11 @@
 
 from datetime import datetime
 import time
-from random import choice, randint
-from asyncio import sleep
+from random import randint
 
 from telethon.events import StopPropagation
 
-from userbot import (AFKREASON, COUNT_MSG, CMD_HELP, ISAFK, BOTLOG,
-                     BOTLOG_CHATID, USERS, PM_AUTO_BAN)
+from userbot import (AFKREASON, CMD_HELP, BOTLOG, BOTLOG_CHATID, PM_AUTO_BAN)
 from userbot.events import register
 
 # ========================= CONSTANTS ============================
@@ -45,10 +43,12 @@ AFKSTR = [
     "I am not here right now...\nbut if I was...\n\nwouldn't that be awesome?",
 ]
 # =================================================================
+
+
 @register(outgoing=True, pattern="^.off(?: |$)(.*)", disable_errors=True)
 async def set_afk(afk_e):
     """ For .afk command, allows you to inform people that you are afk when they message you """
-    message = afk_e.text
+    afk_e.text
     string = afk_e.pattern_match.group(1)
     global ISAFK
     global AFKREASON
