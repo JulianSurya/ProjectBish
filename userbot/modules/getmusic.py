@@ -45,22 +45,31 @@ def get_readable_time(seconds: int) -> str:
 
     return up_time
 
+
 def getmusic(get, DEFAULT_AUDIO_QUALITY):
-  search = get
+    search = get
 
-  headers = {'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'}
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'}
 
-  html = requests.get('https://www.youtube.com/results?search_query='+search, headers=headers).text
-  soup = BeautifulSoup(html, 'html.parser')
-  for link in soup.find_all('a'):
-    if '/watch?v=' in link.get('href'):
-        # May change when Youtube Website may get updated in the future.
-        video_link = link.get('href')
-        break
+    html = requests.get(
+        'https://www.youtube.com/results?search_query=' +
+        search,
+        headers=headers).text
+    soup = BeautifulSoup(html, 'html.parser')
+    for link in soup.find_all('a'):
+        if '/watch?v=' in link.get('href'):
+            # May change when Youtube Website may get updated in the future.
+            video_link = link.get('href')
+            break
 
-  video_link =  'http://www.youtube.com/'+video_link
-  command = ('youtube-dl --extract-audio --audio-format mp3 --audio-quality ' +DEFAULT_AUDIO_QUALITY + ' ' + video_link)
-  os.system(command)
+    video_link = 'http://www.youtube.com/' + video_link
+    command = (
+        'youtube-dl --extract-audio --audio-format mp3 --audio-quality ' +
+        DEFAULT_AUDIO_QUALITY +
+        ' ' +
+        video_link)
+    os.system(command)
 
 
 @register(outgoing=True, pattern=r"^\.song (.*)")
@@ -76,28 +85,27 @@ async def _(event):
         query = reply.message
         await event.edit("`Wait..! I am finding your song..`")
     else:
-    	await event.edit("`What I am Supposed to find`")
-    	return
+        await event.edit("`What I am Supposed to find`")
+        return
 
-    getmusic(str(query),"320k")
+    getmusic(str(query), "320k")
     l = glob.glob("*.mp3")
     loa = l[0]
     await event.edit("`Yeah.. Uploading your song..`")
     await event.client.send_file(
-                event.chat_id,
-                loa,
-                force_document=True,
-                allow_cache=False,
-                caption=query,
-                reply_to=reply_to_id
-            )
+        event.chat_id,
+        loa,
+        force_document=True,
+        allow_cache=False,
+        caption=query,
+        reply_to=reply_to_id
+    )
     await event.delete()
     os.system("rm -rf *.mp3")
-    subprocess.check_output("rm -rf *.mp3",shell=True)
+    subprocess.check_output("rm -rf *.mp3", shell=True)
 
 
 @register(outgoing=True, pattern="^.netease(?: |$)(.*)")
-
 async def _(event):
     if event.fwd_from:
         return
