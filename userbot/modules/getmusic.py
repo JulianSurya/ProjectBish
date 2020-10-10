@@ -61,24 +61,24 @@ async def _(event):
         query = reply.message
         await event.edit("`Wait..! I am finding your song..`")
     else:
-    	await event.edit("`What I am Supposed to find`")
-    	return
+        await event.edit("`What I am Supposed to find`")
+        return
 
-    getmusic(str(query),"320k")
+    getmusic(str(query), "320k")
     l = glob.glob("*.mp3")
     loa = l[0]
     await event.edit("`Yeah.. Uploading your song..`")
     await event.client.send_file(
-                event.chat_id,
-                loa,
-                force_document=True,
-                allow_cache=False,
-                caption=query,
-                reply_to=reply_to_id
-            )
+        event.chat_id,
+        loa,
+        force_document=True,
+        allow_cache=False,
+        caption=query,
+        reply_to=reply_to_id
+    )
     await event.delete()
     os.system("rm -rf *.mp3")
-    subprocess.check_output("rm -rf *.mp3",shell=True)
+    subprocess.check_output("rm -rf *.mp3", shell=True)
 
 
 @register(outgoing=True, pattern=r"^\.vsong(?: |$)(.*)")
