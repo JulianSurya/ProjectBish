@@ -5,12 +5,10 @@ import deezloader
 import os
 import shutil
 import time
-from asyncio.exceptions import TimeoutError
 
 import deezloader
 from hachoir.metadata import extractMetadata
 from hachoir.parser import createParser
-from pylast import User
 from selenium import webdriver
 from telethon import events
 from telethon.errors.rpcerrorlist import YouBlockedUserError
@@ -20,10 +18,8 @@ from userbot import (
     CMD_HELP,
     DEEZER_ARL_TOKEN,
     GOOGLE_CHROME_BIN,
-    LASTFM_USERNAME,
     TEMP_DOWNLOAD_DIRECTORY,
     bot,
-    lastfm,
 )
 from userbot.events import register
 
@@ -152,6 +148,7 @@ async def _(event):
         os.system("rm -rf *.mp4")
         os.system("rm -rf *.webm")
         return
+
 
 async def _(event):
     if event.fwd_from:
